@@ -24,7 +24,7 @@ public class AnswerSheet {
 
     public static void main(String[] args){
 
-        URL resource = Test.class.getClassLoader().getResource("pic/test_01.png");
+        URL resource = Test.class.getClassLoader().getResource("pic/test_05.png");
         if(resource==null){
             throw new RuntimeException("读取路径失败！");
         }
@@ -127,6 +127,11 @@ public class AnswerSheet {
         List<MatRect> matRectList = filterContour(mvt);
         matRectList.sort(AnswerSheet::compareMatRect);
 
+        if(matRectList.size()!=25){
+            System.out.println("matRectList.size()="+matRectList.size());
+            return;
+        }
+
         int index = 0;
         for (int i = 0; i < 5; i++) {
             String number = String.valueOf(i+1);
@@ -167,7 +172,7 @@ public class AnswerSheet {
         for (int i = 0; i < mvt.size(); i++) {
             Mat mat = mvt.get(i);
             Rect rect = boundingRect(mat);
-            float ar = rect.width()/rect.height();
+            float ar = (float) rect.width()/rect.height();
             if(rect.height()>=20 && rect.width()>=20 && ar>=0.9 && ar<=1.1){
                 rectList.add(new MatRect(mat,rect));
             }
