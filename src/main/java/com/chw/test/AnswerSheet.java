@@ -8,6 +8,11 @@ import org.bytedeco.javacv.OpenCVFrameConverter;
 import org.bytedeco.opencv.opencv_core.*;
 
 import javax.swing.*;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.List;
 
 import static org.bytedeco.opencv.global.opencv_core.*;
 import static org.bytedeco.opencv.global.opencv_imgcodecs.IMREAD_GRAYSCALE;
@@ -17,11 +22,21 @@ import static org.bytedeco.opencv.global.opencv_imgproc.*;
 
 public class AnswerSheet {
 
-    public static void main(String[] args) throws InterruptedException {
+    public static void main(String[] args){
 
-        String srcPath = "D:\\github\\javacv-test\\src\\main\\resources\\pic\\test_01.png";
+        URL resource = Test.class.getClassLoader().getResource("pic/test_01.png");
+        if(resource==null){
+            throw new RuntimeException("读取路径失败！");
+        }
+
+        String srcPath = resource.getPath().substring(1);
 
         Mat src = imread(srcPath,IMREAD_GRAYSCALE);
+        //show(src,"src");
+
+        if(src.empty()){
+            throw new RuntimeException("读取图片失败！");
+        }
         Mat gray = src.clone();
 
         // 高斯滤波平滑处理
@@ -101,9 +116,63 @@ public class AnswerSheet {
          * THRESH_TOZERO 大于阈值部分不改变，否则设为0
          * THRESH_TOZERO_INV THRESH_TOZERO的反转
          */
-        // 当 type = CV_THRESH_OTSU 时, thresh 的值会被忽略
+        // 当 type = CV_THRESH_OTSU 时, thresh 的值会被忽略 算法会自动计算合适的阈值
         threshold(warp,threshPic,thresh,max_val,THRESH_BINARY_INV | THRESH_OTSU);
-        //show(threshPic,"threshPic");
+        show(threshPic,"threshPic");
+
+        MatVector mvt = new MatVector();
+        findContours(threshPic,mvt,new Mat(),RETR_EXTERNAL,CHAIN_APPROX_SIMPLE);
+        System.out.println("mvt.size()="+mvt.size());
+
+        List<MatRect> matRectList = filterContour(mvt);
+        matRectList.sort(AnswerSheet::compareMatRect);
+
+        int index = 0;
+        for (int i = 0; i < 5; i++) {
+            String number = String.valueOf(i+1);
+            List<Answer> answerList = Arrays.asList(new Answer(number,"A"),
+                    new Answer(number,"B"), new Answer(number,"C"),
+                    new Answer(number,"D"), new Answer(number,"E"));
+            for (int j = 0; j < 5; j++) {
+                Mat mask = Mat.zeros(threshPic.size(), CV_8UC1).asMat();
+                MatVector vector = new MatVector(matRectList.get(index).getMat());
+                Scalar slr = new Scalar(255);
+                drawContours(mask,vector,contourIdx,slr,CV_FILLED,LINE_8,new Mat(),maxLevel,new Point());
+                Mat bit = new Mat();
+                bitwise_and(threshPic,mask,bit);
+                //show(threshPic,"after_threshPic");
+                //show(mask,"mask"+index);
+                //show(bit,"bit");
+                index++;
+                answerList.get(j).setScore(countNonZero(bit));
+            }
+            Answer answer = answerList.stream().max(Comparator.comparing(Answer::getScore)).orElse(null);
+            System.out.println(answer);
+        }
+
+    }
+
+    private static int compareMatRect(MatRect o1,MatRect o2){
+        Rect r1 = o1.getRect();
+        Rect r2 = o2.getRect();
+        int i = r1.y() - r2.y();
+        if(Math.abs(i)>5){
+            return i;
+        }
+        return r1.x()-r2.x();
+    }
+
+    private static List<MatRect> filterContour(MatVector mvt){
+        List<MatRect> rectList = new ArrayList<>();
+        for (int i = 0; i < mvt.size(); i++) {
+            Mat mat = mvt.get(i);
+            Rect rect = boundingRect(mat);
+            float ar = rect.width()/rect.height();
+            if(rect.height()>=20 && rect.width()>=20 && ar>=0.9 && ar<=1.1){
+                rectList.add(new MatRect(mat,rect));
+            }
+        }
+        return rectList;
     }
 
     /**
@@ -132,13 +201,13 @@ public class AnswerSheet {
         return list;
     }
 
-    private static void show(Mat image, String caption) throws InterruptedException {
+    private static void show(Mat image, String caption){
         CanvasFrame canvas = new CanvasFrame(caption, 1);
         canvas.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         OpenCVFrameConverter converter = new OpenCVFrameConverter.ToIplImage();
         canvas.showImage(converter.convert(image));
-        canvas.waitKey(0);
-        canvas.dispose();
+//        canvas.waitKey(0);
+//        canvas.dispose();
     }
 
     /**
