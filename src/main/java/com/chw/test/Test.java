@@ -25,17 +25,22 @@ public class Test {
 
 
     private static void test1(){
-        Mat src = Helper.openImg("pic/test_11.png");
-        Config config = new Config(4, 3, 0, 14, 9, 0.20, 0.20, true);
+        Mat src = Helper.openImg("pic/test_06.png");
+        Config config = new Config(4, 3, 0, 14, 9, 0.2, 0.2);
+        MatRectMap matRectMap = new MatRectMap();
         List<MatRect> modelList = new ArrayList<>();
         for (int i = 0; i < 5; i++) {
             int y=22+(i)*48;
+            MatRectRow matRectRow = new MatRectRow();
             for (int j = 0; j < 4; j++) {
                 int x = 87+(j)*66;
-                modelList.add(new MatRect(new Rect(x,y,44,26)));
+                MatRect matRect = new MatRect(new Rect(x, y, 44, 26));
+                matRectRow.getMatRectList().add(matRect);
+                modelList.add(matRect);
             }
+            matRectMap.getRowList().add(matRectRow);
         }
-        Question question = new Question(src.clone(),config,modelList);
+        Question question = new Question(src.clone(),config);
         for (int i = 0; i < 5; i++) {
             String number = String.valueOf(i+51);
             List<Option> optionList = Arrays.asList(new Option(number,"A"),

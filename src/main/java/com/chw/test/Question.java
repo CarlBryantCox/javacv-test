@@ -19,8 +19,10 @@ public class Question {
 
     private MatRectMap matRectMap;
 
+    // 识别到的填涂区域
     private List<MatRect> matRectList;
 
+    // 模板提供的填涂区域
     private List<MatRect> modelList;
 
     private List<Answer> answerList;
@@ -35,14 +37,45 @@ public class Question {
         this(src, config,modelList,null);
     }
 
+    public Question(Mat src,Config config,MatRectMap matRectMap) {
+        this(src,config,null,matRectMap);
+    }
+
     public Question(Mat src, Config config, List<MatRect> modelList, MatRectMap matRectMap) {
         this.config=config;
         this.modelList = modelList;
         this.matRectMap = matRectMap;
         this.src=Helper.getResize(src,config.getMultiple());
         this.setThreshPic();
-        this.setMatRectList();
-        this.maskScore=matRectList.size()>0?this.calculateScore(matRectList.get(0).getMat()):0;
+        if(matRectMap==null){
+            this.setMatRectList();
+        }else {
+            this.matRectList = new ArrayList<>();
+        }
+        this.setMaskScore();
+        System.out.println("maskScore="+maskScore);
+    }
+
+    /**
+     * 设置填涂的满分值
+     */
+    private void setMaskScore(){
+        if(!matRectList.isEmpty()){
+            this.maskScore=countNonZero(getMask(matRectList.get(0).getMat()));
+            return;
+        }
+        if(modelList!=null && !modelList.isEmpty()){
+            this.maskScore=countNonZero(getMask(modelList.get(0).getMat()));
+            return;
+        }
+        if(matRectMap!=null && !matRectMap.getRowList().isEmpty()){
+            MatRectRow matRectRow = matRectMap.getRowList().get(0);
+            if(!matRectRow.getMatRectList().isEmpty()){
+                this.maskScore=countNonZero(getMask(matRectRow.getMatRectList().get(0).getMat()));
+                return;
+            }
+        }
+        this.maskScore=0;
     }
 
     /**
@@ -50,17 +83,15 @@ public class Question {
      */
     public List<Answer> findAnswer(){
         if(matRectList.size()!=(config.getOptionCount()*answerList.size())){
-            if(modelList==null){
-                if(tryFullMatRectList()){
-                    System.out.println("-------尝试补充模板成功！---------");
+            if(!config.getTryFix() || !tryFullMatRectList()){
+                if(modelList==null){
+                    return findAnswerByMap();
                 }else {
-                    return findAnswerByMap();
-                }
-            }else {
-                matRectList = modelList;
-                if(matRectList.size()!=(config.getOptionCount()*answerList.size())){
-                    System.out.println("--------模板异常------------");
-                    return findAnswerByMap();
+                    matRectList = modelList;
+                    if(matRectList.size()!=(config.getOptionCount()*answerList.size())){
+                        System.out.println("--------模板异常------------");
+                        return findAnswerByMap();
+                    }
                 }
             }
         }
@@ -105,7 +136,11 @@ public class Question {
         return answerList;
     }
 
+    /**
+     * 尝试利用识别到的信息补充模板
+     */
     private boolean tryFullMatRectList(){
+        System.out.println("--------开始尝试补充模板-------");
         if(matRectList.isEmpty()){
             return false;
         }
@@ -121,6 +156,7 @@ public class Question {
         }
         if(!checkNumList(xList,config.getWidthGap(),xGap,config.getOptionCount())
                 || !checkNumList(yList,config.getHeightGap(),yGap,answerList.size())){
+            System.out.println("----尝试补充模板失败-----------");
             return false;
         }
         matRectList = new ArrayList<>();
@@ -129,9 +165,13 @@ public class Question {
                 matRectList.add(new MatRect(new Rect(xNum.getAvg(),yNum.getAvg(),config.getWidth(),config.getHeight())));
             }
         }
+        System.out.println("----尝试补充模板成功-----------");
         return true;
     }
 
+    /**
+     * 判断识别到的信息能否 得到 完整的模板
+     */
     private boolean checkNumList(ChwNumList chwNumList,int bigGap,int gap,int count){
         System.out.println("inputList------");
         System.out.println(chwNumList);
@@ -143,6 +183,9 @@ public class Question {
         return fullNumList(chwNumList,bigGap,gap,count);
     }
 
+    /**
+     * 尝试补充 识别到的信息
+     */
     private boolean fullNumList(ChwNumList chwNumList,int bigGap,int gap,int count){
         List<ChwNum> numList = chwNumList.getChwNumList();
         double round;
@@ -154,8 +197,10 @@ public class Question {
                 gapList.addNum(numList.get(i).getAvg()-numList.get(i-1).getAvg());
             }
             round = (double) gapList.getMax() / gapList.getMin();
+            System.out.println("-----王道-------");
         }else {
             round = (double)(chwNumList.getMax()-chwNumList.getMin()) / bigGap;
+            System.out.println("-----侠道-------");
         }
         if(round<(count-1+0.1) && round>(count-1-0.1)){
             chwNumList.getChwNumList().clear();
@@ -174,13 +219,21 @@ public class Question {
      * 计算掩码下 非零点的数量（即计算答题卡被涂黑的区域大小）
      */
     private int calculateScore(Mat mat){
+        Mat mask =getMask(mat);
+        Mat bit = new Mat();
+        bitwise_and(threshPic,mask,bit);
+        return countNonZero(bit);
+    }
+
+    /**
+     * 获取掩码
+     */
+    private Mat getMask(Mat mat){
         Mat mask = Mat.zeros(threshPic.size(), CV_8UC1).asMat();
         MatVector vector = new MatVector(mat);
         Scalar slr = new Scalar(255);
         drawContours(mask,vector,-1,slr,CV_FILLED,LINE_8,new Mat(),8,new Point());
-        Mat bit = new Mat();
-        bitwise_and(threshPic,mask,bit);
-        return countNonZero(bit);
+        return mask;
     }
 
     /**
