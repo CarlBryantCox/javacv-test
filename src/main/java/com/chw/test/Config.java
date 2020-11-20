@@ -16,6 +16,10 @@ public class Config {
 
     private Double heightScope;
 
+    private Integer widthGap;
+
+    private Integer heightGap;
+
     private Boolean open;
 
     public Config() {
@@ -31,6 +35,11 @@ public class Config {
     }
 
     public Config(Integer optionCount,Integer multiple, Integer thresh, Integer width, Integer height, Double widthScope, Double heightScope,Boolean open) {
+        this(optionCount, multiple,thresh, width, height, widthScope, heightScope,0,0,open);
+    }
+
+    public Config(Integer optionCount, Integer multiple, Integer thresh, Integer width, Integer height,
+                  Double widthScope, Double heightScope, Integer widthGap, Integer heightGap, Boolean open) {
         this.optionCount = optionCount;
         this.multiple = multiple;
         this.thresh = thresh;
@@ -38,7 +47,25 @@ public class Config {
         this.height = height*multiple;
         this.widthScope = widthScope;
         this.heightScope = heightScope;
-        this.open=open;
+        this.widthGap = widthGap;
+        this.heightGap = heightGap;
+        this.open = open;
+    }
+
+    public Integer getWidthGap() {
+        return widthGap;
+    }
+
+    public void setWidthGap(Integer widthGap) {
+        this.widthGap = widthGap;
+    }
+
+    public Integer getHeightGap() {
+        return heightGap;
+    }
+
+    public void setHeightGap(Integer heightGap) {
+        this.heightGap = heightGap;
     }
 
     public Integer getOptionCount() {

@@ -25,8 +25,8 @@ public class Test {
 
 
     private static void test1(){
-        Mat src = Helper.openImg("pic/test_06.png");
-        Config config = new Config(4, 3, 0, 14, 9, 0.15, 0.15, true);
+        Mat src = Helper.openImg("pic/test_11.png");
+        Config config = new Config(4, 3, 0, 14, 9, 0.20, 0.20, true);
         List<MatRect> modelList = new ArrayList<>();
         for (int i = 0; i < 5; i++) {
             int y=22+(i)*48;
