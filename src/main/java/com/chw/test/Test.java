@@ -25,8 +25,9 @@ public class Test {
 
 
     private static void test1(){
-        Mat src = Helper.openImg("pic/test_06.png");
-        Config config = new Config(4, 3, 0, 14, 9, 0.2, 0.2);
+        Mat src = Helper.openImg("pic/test_19.png");
+        int count=4;
+        Config config = new Config(count, 3, 0, 14, 9, 0.2, 0.2);
         MatRectMap matRectMap = new MatRectMap();
         List<MatRect> modelList = new ArrayList<>();
         for (int i = 0; i < 5; i++) {
@@ -43,12 +44,21 @@ public class Test {
         Question question = new Question(src.clone(),config);
         for (int i = 0; i < 5; i++) {
             String number = String.valueOf(i+51);
-            List<Option> optionList = Arrays.asList(new Option(number,"A"),
-                    new Option(number,"B"), new Option(number,"C"),
-                    new Option(number,"D"));
-            Answer answer = new Answer(number,optionList,question.getMaskScore());
+            Answer answer = new Answer(number,getOptionList(count,number),question.getMaskScore());
             question.getAnswerList().add(answer);
         }
         question.findAnswer();
+    }
+
+    private static List<Option> getOptionList(int count,String number){
+        List<Option> optionList;
+        if(count==4){
+            optionList= Arrays.asList(new Option(number,"A"), new Option(number,"B"), new Option(number,"C"),
+                    new Option(number,"D"));
+        }else {
+            optionList= Arrays.asList(new Option(number,"A"), new Option(number,"B"), new Option(number,"C"),
+                    new Option(number,"D"), new Option(number,"E"));
+        }
+        return optionList;
     }
 }

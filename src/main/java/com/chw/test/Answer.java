@@ -27,14 +27,41 @@ public class Answer {
         this.basePercent = basePercent;
     }
 
+    public Answer copy(){
+        return new Answer(questionNumber,scanOptions,maskScore,basePercent);
+    }
+
+    private int vernier;
+
     public List<Option> findChooseOptions() {
-        //System.out.println(scanOptions);
         List<Option> collect = scanOptions.stream().filter(o -> o.getScore() > maskScore*basePercent).collect(Collectors.toList());
         if(collect.isEmpty()){
-            chooseOptions=collect;
+            scanOptions.sort(Comparator.comparing(Option::getScore));
+            vernier = scanOptions.get(0).getScore();
+            boolean get = false;
+            boolean check = false;
+            for (int i = 1; i < scanOptions.size(); i++) {
+                Option current = scanOptions.get(i);
+                if(current.getScore()>(vernier*2)){
+                    vernier = current.getScore();
+                    get = true;
+                    check=false;
+                }
+                int j = i + 1;
+                if(get && (j >= scanOptions.size() || current.getScore()>(scanOptions.get(j).getScore()*0.8))){
+                    check=true;
+                }
+            }
+            int score = (int) (maskScore * 0.25);
+            vernier = vernier > score ? vernier : score;
+            if(check){
+                chooseOptions = scanOptions.stream().filter(o -> o.getScore()>=vernier).collect(Collectors.toList());
+            }else {
+                chooseOptions=collect;
+            }
             return chooseOptions;
         }
-        Option option = collect.stream().max(Comparator.comparing(Option::getScore)).orElse(null);
+        Option option = collect.stream().max(Comparator.comparing(Option::getScore)).orElse(new Option());
         chooseOptions = collect.stream().filter(o -> o.getScore()>(option.getScore()*0.8)).collect(Collectors.toList());
         return chooseOptions;
     }

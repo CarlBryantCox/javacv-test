@@ -34,11 +34,15 @@ public class ChwNumList {
     }
 
     private void setMaxMin(ChwNum chwNum){
-        if(chwNum.getAvg()>max){
-            max=chwNum.getAvg();
-        }
-        if(chwNum.getAvg()<min || min==-1){
-            min=chwNum.getAvg();
+        max = chwNum.getAvg();
+        min = chwNum.getAvg();
+        for (ChwNum num : chwNumList) {
+            if(num.getAvg()>max){
+                max=num.getAvg();
+            }
+            if(num.getAvg()<min){
+                min=num.getAvg();
+            }
         }
     }
 

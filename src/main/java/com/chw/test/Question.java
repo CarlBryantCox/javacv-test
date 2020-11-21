@@ -29,6 +29,10 @@ public class Question {
 
     private Mat threshPic;
 
+    private Boolean retry;
+
+    private Boolean haveReFind;
+
     public Question(Mat src,Config config) {
         this(src,config,null,null);
     }
@@ -42,13 +46,15 @@ public class Question {
     }
 
     public Question(Mat src, Config config, List<MatRect> modelList, MatRectMap matRectMap) {
+        this.retry = true;
+        this.haveReFind = false;
         this.config=config;
         this.modelList = modelList;
         this.matRectMap = matRectMap;
         this.src=Helper.getResize(src,config.getMultiple());
-        this.setThreshPic();
+        this.threshPic = this.getThreshPic();
         if(matRectMap==null){
-            this.setMatRectList();
+            this.matRectList = this.getMatRectList();
         }else {
             this.matRectList = new ArrayList<>();
         }
@@ -75,7 +81,7 @@ public class Question {
                 return;
             }
         }
-        this.maskScore=0;
+        this.maskScore=config.getWidth()*config.getHeight();
     }
 
     /**
@@ -95,6 +101,7 @@ public class Question {
                 }
             }
         }
+        boolean reFind = false;
         int index = 0;
         for (Answer answer : answerList) {
             List<Option> optionList = answer.getScanOptions();
@@ -103,7 +110,13 @@ public class Question {
                 index++;
             }
             List<Option> chooseOptions = answer.findChooseOptions();
+            if(!reFind){
+                reFind=chooseOptions.size()>1;
+            }
             System.out.println(chooseOptions);
+        }
+        if(reFind && !haveReFind){
+            return reFindAnswer(false);
         }
         return answerList;
     }
@@ -120,6 +133,7 @@ public class Question {
         if(rowList.size()!=answerList.size()){
             return answerList;
         }
+        boolean reFind = false;
         for (int i = 0; i < answerList.size(); i++) {
             Answer answer = answerList.get(i);
             List<Option> optionList = answer.getScanOptions();
@@ -131,25 +145,64 @@ public class Question {
                 optionList.get(j).setScore(this.calculateScore(matRectList.get(j).getMat()));
             }
             List<Option> chooseOptions = answer.findChooseOptions();
+            if(!reFind){
+                reFind=chooseOptions.size()>1;
+            }
             System.out.println(chooseOptions);
         }
+        if(reFind && !haveReFind){
+            return reFindAnswer(true);
+        }
         return answerList;
+    }
+
+    private List<Answer> reFindAnswer(boolean map){
+        if(haveReFind){
+            return answerList;
+        }
+        haveReFind=true;
+        int testThresh = 127;
+        if(config.getThresh()>0 && config.getThresh()<100){
+            return answerList;
+        }
+        if(config.getThresh()>100 && config.getThresh()<150){
+            testThresh = config.getThresh()/2;
+        }
+        this.threshPic = this.getThreshPic(testThresh);
+        List<Answer> list = new ArrayList<>();
+        for (Answer answer : answerList) {
+            list.add(answer.copy());
+        }
+        answerList=list;
+        if(map){
+            return findAnswerByMap();
+        }
+        return findAnswer();
+    }
+
+
+    private boolean tryFullMatRectList(){
+        return this.tryFullMatRectList(matRectList);
     }
 
     /**
      * 尝试利用识别到的信息补充模板
      */
-    private boolean tryFullMatRectList(){
+    private boolean tryFullMatRectList(List<MatRect> knowList){
         System.out.println("--------开始尝试补充模板-------");
-        if(matRectList.isEmpty()){
+        if(knowList.isEmpty()){
+            if(retry){
+                retry = false;
+                return tryFullMatRectList(getMatRectList(getThreshPic(220)));
+            }
             return false;
         }
         int xGap = (int) (config.getWidth()*config.getWidthScope()*2);
         int yGap = (int) (config.getHeight()*config.getHeightScope()*2);
         ChwNumList xList = new ChwNumList(xGap);
         ChwNumList yList = new ChwNumList(yGap);
-        System.out.println(matRectList);
-        for (MatRect matRect : matRectList) {
+        System.out.println(knowList);
+        for (MatRect matRect : knowList) {
             Rect rect = matRect.getRect();
             xList.addNum(rect.x());
             yList.addNum(rect.y());
@@ -157,7 +210,10 @@ public class Question {
         if(!checkNumList(xList,config.getWidthGap(),xGap,config.getOptionCount())
                 || !checkNumList(yList,config.getHeightGap(),yGap,answerList.size())){
             System.out.println("----尝试补充模板失败-----------");
-            return false;
+            if(retry){
+                retry = false;
+                return tryFullMatRectList(getMatRectList(getThreshPic(220)));
+            }
         }
         matRectList = new ArrayList<>();
         for (ChwNum yNum : yList.getChwNumList()) {
@@ -196,6 +252,7 @@ public class Question {
             for (int i = 1; i < numList.size(); i++) {
                 gapList.addNum(numList.get(i).getAvg()-numList.get(i-1).getAvg());
             }
+            System.out.println(gapList);
             round = (double) gapList.getMax() / gapList.getMin();
             System.out.println("-----王道-------");
         }else {
@@ -236,15 +293,18 @@ public class Question {
         return mask;
     }
 
+    private Mat getThreshPic(){
+        return getThreshPic(config.getThresh());
+    }
+
     /**
      * 二值化
+     * thresh 阈值
      */
-    private void setThreshPic(){
-        threshPic = new Mat(src.size());
+    private Mat getThreshPic(int thresh){
+        Mat threshMat = new Mat(src.size());
         //当像素值超过了阈值（或者小于阈值，根据type来决定），所赋予的值
         int max_val=255;
-        // 阈值
-        int thresh = config.getThresh();
         /*
          * THRESH_BINARY 超过阈值部分取max_val（最大值），否则取0
          * THRESH_BINARY_INV THRESH_BINARY的反转
@@ -252,29 +312,33 @@ public class Question {
          * THRESH_TOZERO 大于阈值部分不改变，否则设为0
          * THRESH_TOZERO_INV THRESH_TOZERO的反转
          */
-
         if(thresh>0){
-            threshold(src,threshPic,thresh,max_val,THRESH_BINARY_INV);
+            threshold(src,threshMat,thresh,max_val,THRESH_BINARY_INV);
         }else {
             // 当 type = CV_THRESH_OTSU 时, thresh 的值会被忽略 算法会自动计算合适的阈值
-            threshold(src,threshPic,thresh,max_val,THRESH_BINARY_INV | THRESH_OTSU);
-            //adaptiveThreshold(src,threshPic,max_val,ADAPTIVE_THRESH_GAUSSIAN_C,THRESH_BINARY_INV,3,5);
+            threshold(src,threshMat,thresh,max_val,THRESH_BINARY_INV | THRESH_OTSU);
+            //adaptiveThreshold(src,threshMat,max_val,ADAPTIVE_THRESH_GAUSSIAN_C,THRESH_BINARY_INV,3,5);
         }
         if(config.getOpen()){
-            threshPic=Helper.getMorphologyEx(threshPic,MORPH_OPEN);
+            threshMat=Helper.getMorphologyEx(threshMat,MORPH_OPEN);
         }
-        Helper.show(threshPic,"threshPic");
+        Helper.show(threshMat,"threshMat");
+        return threshMat;
+    }
+
+    private List<MatRect> getMatRectList(){
+        return getMatRectList(threshPic);
     }
 
     /**
      * 找到题目的轮廓及外接矩形
      */
-    private void setMatRectList(){
+    private List<MatRect> getMatRectList(Mat threshMat){
         MatVector mvt = new MatVector();
-        findContours(threshPic,mvt,new Mat(),RETR_EXTERNAL,CHAIN_APPROX_SIMPLE);
-        matRectList = filterContour(mvt);
-        matRectList.sort(MatRect::compareTo);
-        //System.out.println(matRectList);
+        findContours(threshMat,mvt,new Mat(),RETR_EXTERNAL,CHAIN_APPROX_SIMPLE);
+        List<MatRect> list = filterContour(mvt);
+        list.sort(MatRect::compareTo);
+        return list;
     }
 
     /**
