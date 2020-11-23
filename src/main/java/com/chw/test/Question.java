@@ -34,23 +34,32 @@ public class Question {
     private Boolean haveReFind;
 
     public Question(Mat src,Config config) {
-        this(src,config,null,null);
+        this(src,config,null,null,null);
     }
 
     public Question(Mat src, Config config,List<MatRect> modelList) {
         this(src, config,modelList,null);
     }
 
-    public Question(Mat src,Config config,MatRectMap matRectMap) {
-        this(src,config,null,matRectMap);
+    public Question(Mat src, Config config,List<MatRect> modelList,List<Answer> answerList) {
+        this(src, config,modelList,null,answerList);
     }
 
-    public Question(Mat src, Config config, List<MatRect> modelList, MatRectMap matRectMap) {
+    public Question(Mat src,Config config,MatRectMap matRectMap) {
+        this(src,config,null,matRectMap,null);
+    }
+
+    public Question(Mat src,Config config,MatRectMap matRectMap,List<Answer> answerList) {
+        this(src,config,null,matRectMap,answerList);
+    }
+
+    public Question(Mat src, Config config, List<MatRect> modelList, MatRectMap matRectMap,List<Answer> answerList) {
         this.retry = true;
         this.haveReFind = false;
         this.config=config;
         this.modelList = modelList;
         this.matRectMap = matRectMap;
+        this.answerList = answerList;
         this.src=Helper.getResize(src,config.getMultiple());
         this.threshPic = this.getThreshPic();
         if(matRectMap==null){
@@ -59,14 +68,13 @@ public class Question {
             this.matRectList = new ArrayList<>();
         }
         this.setMaskScore();
-        System.out.println("maskScore="+maskScore);
     }
 
     /**
      * 设置填涂的满分值
      */
     private void setMaskScore(){
-        if(!matRectList.isEmpty()){
+        if(matRectList!=null && !matRectList.isEmpty()){
             this.maskScore=countNonZero(getMask(matRectList.get(0).getMat()));
             return;
         }
@@ -109,11 +117,12 @@ public class Question {
                 optionList.get(j).setScore(this.calculateScore(matRectList.get(index).getMat()));
                 index++;
             }
-            List<Option> chooseOptions = answer.findChooseOptions();
+            List<Option> chooseOptions = answer.findChooseOptions(maskScore);
             if(!reFind){
                 reFind=chooseOptions.size()>1;
             }
             System.out.println(chooseOptions);
+            System.out.println("answer.getTrust()="+answer.getTrust());
         }
         if(reFind && !haveReFind){
             return reFindAnswer(false);
@@ -144,7 +153,7 @@ public class Question {
             for (int j = 0; j < matRectList.size(); j++) {
                 optionList.get(j).setScore(this.calculateScore(matRectList.get(j).getMat()));
             }
-            List<Option> chooseOptions = answer.findChooseOptions();
+            List<Option> chooseOptions = answer.findChooseOptions(maskScore);
             if(!reFind){
                 reFind=chooseOptions.size()>1;
             }
@@ -162,11 +171,8 @@ public class Question {
         }
         haveReFind=true;
         int testThresh = 127;
-        if(config.getThresh()>0 && config.getThresh()<100){
+        if(config.getThresh()>0 && config.getThresh()<150){
             return answerList;
-        }
-        if(config.getThresh()>100 && config.getThresh()<150){
-            testThresh = config.getThresh()/2;
         }
         this.threshPic = this.getThreshPic(testThresh);
         List<Answer> list = new ArrayList<>();
@@ -338,6 +344,9 @@ public class Question {
         findContours(threshMat,mvt,new Mat(),RETR_EXTERNAL,CHAIN_APPROX_SIMPLE);
         List<MatRect> list = filterContour(mvt);
         list.sort(MatRect::compareTo);
+        if(config.getAutoGetWidthAndHeight()){
+            this.setMaskScore();
+        }
         return list;
     }
 
@@ -347,6 +356,7 @@ public class Question {
      * @return matRectList
      */
     private List<MatRect> filterContour(MatVector mvt){
+        checkConfigWidthAndHeight(mvt);
         List<MatRect> rectList = new ArrayList<>();
         for (int i = 0; i < mvt.size(); i++) {
             Mat mat = mvt.get(i);
@@ -360,6 +370,53 @@ public class Question {
         }
         return rectList;
     }
+
+    private void checkConfigWidthAndHeight(MatVector mvt){
+        if(config.getWidth()==0 || config.getHeight()==0 || config.getAutoGetWidthAndHeight()){
+            int gap = 5;
+            ChwNumList x = new ChwNumList(gap);
+            ChwNumList y = new ChwNumList(gap);
+            //System.out.println("mvt.size()="+mvt.size());
+            for (int i = 0; i < mvt.size(); i++) {
+                Mat mat = mvt.get(i);
+                Rect rect = boundingRect(mat);
+                double wh = (double) rect.width() / rect.height();
+                if(wh>0.9 && rect.width()>gap && rect.height()>gap){
+                    x.addNum(rect.width());
+                    y.addNum(rect.height());
+                }
+
+            }
+            if(config.getWidth()==0 || config.getAutoGetWidthAndHeight()){
+                config.setWidth(findFrequent(x.getChwNumList()));
+            }
+            if(config.getHeight()==0 || config.getAutoGetWidthAndHeight()){
+                config.setHeight(findFrequent(y.getChwNumList()));
+            }
+            System.out.println(x);
+            System.out.println(y);
+            System.out.println("config.getWidth()="+config.getWidth());
+            System.out.println("config.getHeight()="+config.getHeight());
+            config.setAutoGetWidthAndHeight(true);
+        }
+    }
+
+    private int findFrequent(List<ChwNum> chwNumList){
+        int maxSize=0;
+        int maxAvg=0;
+        for (ChwNum chwNum : chwNumList) {
+            if(chwNum.getNumList().size()>maxSize){
+                maxSize=chwNum.getNumList().size();
+                maxAvg=chwNum.getAvg();
+            }else if(chwNum.getNumList().size()==maxSize){
+                if(chwNum.getAvg()>maxAvg){
+                    maxAvg=chwNum.getAvg();
+                }
+            }
+        }
+        return maxAvg;
+    }
+
 
     public Integer getMaskScore() {
         return maskScore;

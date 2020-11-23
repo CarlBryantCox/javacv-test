@@ -16,28 +16,41 @@ public class Answer {
 
     private List<Option> chooseOptions;
 
-    public Answer(String questionNumber,List<Option> scanOptions,Integer maskScore) {
-        this(questionNumber,scanOptions,maskScore,0.4);
+    private Double trust;
+
+    public Answer(String questionNumber,List<Option> scanOptions) {
+        this(questionNumber,scanOptions,0.4);
     }
 
-    public Answer(String questionNumber, List<Option> scanOptions,Integer maskScore,Double basePercent) {
+    public Answer(String questionNumber, List<Option> scanOptions,Double basePercent) {
         this.questionNumber = questionNumber;
-        this.maskScore=maskScore;
         this.scanOptions = scanOptions;
         this.basePercent = basePercent;
     }
 
     public Answer copy(){
-        return new Answer(questionNumber,scanOptions,maskScore,basePercent);
+        return new Answer(questionNumber,scanOptions,basePercent);
     }
 
     private int vernier;
 
-    public List<Option> findChooseOptions() {
+    public List<Option> findChooseOptions(Integer maskScore) {
+        this.maskScore=maskScore;
+        return findChooseOptions();
+    }
+
+    private List<Option> findChooseOptions() {
         List<Option> collect = scanOptions.stream().filter(o -> o.getScore() > maskScore*basePercent).collect(Collectors.toList());
         if(collect.isEmpty()){
             scanOptions.sort(Comparator.comparing(Option::getScore));
-            vernier = scanOptions.get(0).getScore();
+            Option min = scanOptions.get(0);
+            Option max = scanOptions.get(scanOptions.size()-1);
+            if(max.getScore()==0){
+                this.trust=1.0;
+            }else {
+                this.trust=(double)(max.getScore()-min.getScore())/max.getScore();
+            }
+            vernier = min.getScore();
             boolean get = false;
             boolean check = false;
             for (int i = 1; i < scanOptions.size(); i++) {
@@ -61,8 +74,14 @@ public class Answer {
             }
             return chooseOptions;
         }
-        Option option = collect.stream().max(Comparator.comparing(Option::getScore)).orElse(new Option());
-        chooseOptions = collect.stream().filter(o -> o.getScore()>(option.getScore()*0.8)).collect(Collectors.toList());
+        Option max = collect.stream().max(Comparator.comparing(Option::getScore)).orElse(new Option());
+        Option min = scanOptions.stream().min(Comparator.comparing(Option::getScore)).orElse(new Option());
+        if(max.getScore()==0){
+            this.trust=1.0;
+        }else {
+            this.trust=(double)(max.getScore()-min.getScore())/max.getScore();
+        }
+        chooseOptions = collect.stream().filter(o -> o.getScore()>(max.getScore()*0.8)).collect(Collectors.toList());
         return chooseOptions;
     }
 
@@ -70,16 +89,8 @@ public class Answer {
         return questionNumber;
     }
 
-    public void setQuestionNumber(String questionNumber) {
-        this.questionNumber = questionNumber;
-    }
-
     public List<Option> getScanOptions() {
         return scanOptions;
-    }
-
-    public void setScanOptions(List<Option> scanOptions) {
-        this.scanOptions = scanOptions;
     }
 
     public List<Option> getChooseOptions() {
@@ -89,7 +100,7 @@ public class Answer {
         return chooseOptions;
     }
 
-    public void setChooseOptions(List<Option> chooseOptions) {
-        this.chooseOptions = chooseOptions;
+    public Double getTrust() {
+        return trust;
     }
 }

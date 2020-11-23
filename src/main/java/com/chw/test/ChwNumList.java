@@ -23,14 +23,25 @@ public class ChwNumList {
     public void addNum(Integer num){
         for (ChwNum chwNum : chwNumList) {
             if(chwNum.addNum(num)){
+                handleOutList(chwNum);
                 setMaxMin(chwNum);
                 return;
             }
         }
         ChwNum chwNum = new ChwNum(gap);
         chwNum.addNum(num);
-        setMaxMin(chwNum);
         chwNumList.add(chwNum);
+        handleOutList(chwNum);
+        setMaxMin(chwNum);
+    }
+
+    private void handleOutList(ChwNum chwNum){
+        List<Integer> outList = chwNum.getOutList();
+        if(!outList.isEmpty()){
+            for (Integer integer : outList) {
+                addNum(integer);
+            }
+        }
     }
 
     private void setMaxMin(ChwNum chwNum){

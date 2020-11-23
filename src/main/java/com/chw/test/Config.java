@@ -12,6 +12,8 @@ public class Config {
 
     private Integer height;
 
+    private Boolean autoGetWidthAndHeight;
+
     private Double widthScope;
 
     private Double heightScope;
@@ -25,7 +27,7 @@ public class Config {
     private Boolean tryFix;
 
     public Config() {
-        this(5,1,0,35,35,0.15,0.15,false,true);
+        this(5,1,0,0,0,0.15,0.15,false,true);
     }
 
     public Config(Integer optionCount,Integer thresh, Integer width, Integer height) {
@@ -71,6 +73,7 @@ public class Config {
         this.thresh = thresh;
         this.width = width*multiple;
         this.height = height*multiple;
+        this.autoGetWidthAndHeight=false;
         this.widthScope = widthScope;
         this.heightScope = heightScope;
         this.widthGap = widthGap*multiple;
@@ -121,5 +124,21 @@ public class Config {
 
     public Double getHeightScope() {
         return heightScope;
+    }
+
+    public void setWidth(Integer width) {
+        this.width = width;
+    }
+
+    public void setHeight(Integer height) {
+        this.height = height;
+    }
+
+    public Boolean getAutoGetWidthAndHeight() {
+        return autoGetWidthAndHeight;
+    }
+
+    public void setAutoGetWidthAndHeight(Boolean autoGetWidthAndHeight) {
+        this.autoGetWidthAndHeight = autoGetWidthAndHeight;
     }
 }

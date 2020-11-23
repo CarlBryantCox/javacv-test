@@ -83,13 +83,13 @@ public class AnswerSheet {
         Mat warp = performPerspectiveWarp(src, approx);
         //show(warp,"warp");
 
-        Question question = new Question(warp,new Config(5,0,35,35));
+        Question question = new Question(warp,new Config());
         for (int i = 0; i < 5; i++) {
             String number = String.valueOf(i+1);
             List<Option> optionList = Arrays.asList(new Option(number,"A"),
                     new Option(number,"B"), new Option(number,"C"),
                     new Option(number,"D"), new Option(number,"E"));
-            Answer answer = new Answer(number,optionList,question.getMaskScore());
+            Answer answer = new Answer(number,optionList);
             question.getAnswerList().add(answer);
         }
         question.findAnswer();

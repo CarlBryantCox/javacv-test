@@ -25,9 +25,10 @@ public class Test {
 
 
     private static void test1(){
-        Mat src = Helper.openImg("pic/test_19.png");
+        Mat src = Helper.openImg("pic/test_15.png");
         int count=4;
-        Config config = new Config(count, 3, 0, 14, 9, 0.2, 0.2);
+        //Config config = new Config(count, 3, 0, 14, 9, 0.2, 0.2);
+        Config config = new Config(count, 3, 0, 0, 0, 0.2, 0.2);
         MatRectMap matRectMap = new MatRectMap();
         List<MatRect> modelList = new ArrayList<>();
         for (int i = 0; i < 5; i++) {
@@ -44,7 +45,7 @@ public class Test {
         Question question = new Question(src.clone(),config);
         for (int i = 0; i < 5; i++) {
             String number = String.valueOf(i+51);
-            Answer answer = new Answer(number,getOptionList(count,number),question.getMaskScore());
+            Answer answer = new Answer(number,getOptionList(count,number));
             question.getAnswerList().add(answer);
         }
         question.findAnswer();
