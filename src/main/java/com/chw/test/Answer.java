@@ -42,6 +42,12 @@ public class Answer {
     private List<Option> findChooseOptions() {
         List<Option> collect = scanOptions.stream().filter(o -> o.getScore() > maskScore*basePercent).collect(Collectors.toList());
         if(collect.isEmpty()){
+            /*
+             * 如果区域的灰度 都小于最低标准 则判断灰度的变化 有没有跳跃点
+             * 先将区域 按照灰度 从小到大排序
+             * 如果一个区域的灰度 是前一个区域的2倍 则认为它是跳跃点
+             * 并且 它的灰度  大于 后一个区域的80% 则认为它是有效的跳跃点
+             */
             scanOptions.sort(Comparator.comparing(Option::getScore));
             Option min = scanOptions.get(0);
             Option max = scanOptions.get(scanOptions.size()-1);
@@ -65,6 +71,7 @@ public class Answer {
                     check=true;
                 }
             }
+            // 根据答题卡的特性 这里再次取 理想灰度的25% 作为底线
             int score = (int) (maskScore * 0.25);
             vernier = vernier > score ? vernier : score;
             if(check){
@@ -74,6 +81,7 @@ public class Answer {
             }
             return chooseOptions;
         }
+        // 如果大于最低的区域 不为空 则选取 灰度大于 最大灰度的80% 的区域 为选择区域
         Option max = collect.stream().max(Comparator.comparing(Option::getScore)).orElse(new Option());
         Option min = scanOptions.stream().min(Comparator.comparing(Option::getScore)).orElse(new Option());
         if(max.getScore()==0){

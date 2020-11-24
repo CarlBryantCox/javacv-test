@@ -25,11 +25,13 @@ public class Test {
 
 
     private static void test1(){
-        Mat src = Helper.openImg("pic/test_15.png");
-        int count=4;
+        Mat src = Helper.openImg("pic/test_10.png");
+        int count=5;
         //Config config = new Config(count, 3, 0, 14, 9, 0.2, 0.2);
         Config config = new Config(count, 3, 0, 0, 0, 0.2, 0.2);
+        // 模板图
         MatRectMap matRectMap = new MatRectMap();
+        // 模板列表
         List<MatRect> modelList = new ArrayList<>();
         for (int i = 0; i < 5; i++) {
             int y=22+(i)*48;
@@ -43,6 +45,7 @@ public class Test {
             matRectMap.getRowList().add(matRectRow);
         }
         Question question = new Question(src.clone(),config);
+        // 设置 识别区域 有多少题
         for (int i = 0; i < 5; i++) {
             String number = String.valueOf(i+51);
             Answer answer = new Answer(number,getOptionList(count,number));
