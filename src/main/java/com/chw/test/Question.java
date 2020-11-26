@@ -208,7 +208,7 @@ public class Question {
         int yGap = (int) (config.getHeight()*config.getHeightScope()*2);
         ChwNumList xList = new ChwNumList(xGap);
         ChwNumList yList = new ChwNumList(yGap);
-        System.out.println(knowList);
+        //System.out.println(knowList);
         for (MatRect matRect : knowList) {
             Rect rect = matRect.getRect();
             xList.addNum(rect.x());
@@ -228,6 +228,8 @@ public class Question {
                 matRectList.add(new MatRect(new Rect(xNum.getAvg(),yNum.getAvg(),config.getWidth(),config.getHeight())));
             }
         }
+        //System.out.println("------补充的模板--------");
+        //System.out.println(matRectList);
         System.out.println("----尝试补充模板成功-----------");
         return true;
     }
@@ -236,8 +238,8 @@ public class Question {
      * 判断识别到的信息能否 得到 完整的模板
      */
     private boolean checkNumList(ChwNumList chwNumList,int bigGap,int gap,int count){
-        System.out.println("inputList------");
-        System.out.println(chwNumList);
+        //System.out.println("inputList------");
+        //System.out.println(chwNumList);
         List<ChwNum> numList = chwNumList.getChwNumList();
         if(numList.size()==count){
             numList.sort(Comparator.comparing(ChwNum::getAvg));
@@ -259,7 +261,7 @@ public class Question {
             for (int i = 1; i < numList.size(); i++) {
                 gapList.addNum(numList.get(i).getAvg()-numList.get(i-1).getAvg());
             }
-            System.out.println(gapList);
+            //System.out.println(gapList);
             round = (double) gapList.getMax() / gapList.getMin();
             System.out.println("-----王道-------");
         }else {
@@ -272,8 +274,8 @@ public class Question {
             for (int i = 0; i < count; i++) {
                 chwNumList.addNum(chwNumList.getMin()+i*v);
             }
-            System.out.println("-----outputList----");
-            System.out.println(chwNumList);
+            //System.out.println("-----outputList----");
+            //System.out.println(chwNumList);
             return true;
         }
         return false;
@@ -397,8 +399,8 @@ public class Question {
             if(config.getHeight()==0 || config.getAutoGetWidthAndHeight()){
                 config.setHeight(findFrequent(y.getChwNumList()));
             }
-            System.out.println(x);
-            System.out.println(y);
+            //System.out.println(x);
+            //System.out.println(y);
             System.out.println("config.getWidth()="+config.getWidth());
             System.out.println("config.getHeight()="+config.getHeight());
             config.setAutoGetWidthAndHeight(true);

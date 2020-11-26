@@ -25,18 +25,21 @@ public class Test {
 
 
     private static void test1(){
-        Mat src = Helper.openImg("pic/test_10.png");
-        int count=5;
-        //Config config = new Config(count, 3, 0, 14, 9, 0.2, 0.2);
-        Config config = new Config(count, 3, 0, 0, 0, 0.2, 0.2);
+        Mat src = Helper.openImg("pic/test_03.png");
+        // 设置有多少个选项
+        int optionCount=4;
+        // 设置有多少题
+        int questionCount = 5;
+        //Config config = new Config(optionCount, 3, 0, 14, 9, 0.2, 0.2);
+        Config config = new Config(optionCount, 3, 0, 0, 0, 0.2, 0.2);
         // 模板图
         MatRectMap matRectMap = new MatRectMap();
         // 模板列表
         List<MatRect> modelList = new ArrayList<>();
-        for (int i = 0; i < 5; i++) {
+        for (int i = 0; i < questionCount; i++) {
             int y=22+(i)*48;
             MatRectRow matRectRow = new MatRectRow();
-            for (int j = 0; j < 4; j++) {
+            for (int j = 0; j < optionCount; j++) {
                 int x = 87+(j)*66;
                 MatRect matRect = new MatRect(new Rect(x, y, 44, 26));
                 matRectRow.getMatRectList().add(matRect);
@@ -46,9 +49,9 @@ public class Test {
         }
         Question question = new Question(src.clone(),config);
         // 设置 识别区域 有多少题
-        for (int i = 0; i < 5; i++) {
+        for (int i = 0; i < questionCount; i++) {
             String number = String.valueOf(i+51);
-            Answer answer = new Answer(number,getOptionList(count,number));
+            Answer answer = new Answer(number,getOptionList(optionCount,number));
             question.getAnswerList().add(answer);
         }
         question.findAnswer();
