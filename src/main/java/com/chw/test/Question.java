@@ -221,6 +221,7 @@ public class Question {
                 retry = false;
                 return tryFullMatRectList(getMatRectList(getThreshPic(220)));
             }
+            return false;
         }
         matRectList = new ArrayList<>();
         for (ChwNum yNum : yList.getChwNumList()) {
