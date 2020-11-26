@@ -142,6 +142,7 @@ public class Question {
         if(rowList.size()!=answerList.size()){
             return answerList;
         }
+        // 如果识别的答案 是多选 则尝试 调整阈值 再次识别
         boolean reFind = false;
         for (int i = 0; i < answerList.size(); i++) {
             Answer answer = answerList.get(i);
@@ -371,6 +372,9 @@ public class Question {
         return rectList;
     }
 
+    /**
+     * 如果宽高为 0 或要求 自动识别 则自动识别宽高
+     */
     private void checkConfigWidthAndHeight(MatVector mvt){
         if(config.getWidth()==0 || config.getHeight()==0 || config.getAutoGetWidthAndHeight()){
             int gap = 5;
