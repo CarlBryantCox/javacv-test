@@ -25,9 +25,9 @@ public class Test {
 
 
     private static void test1(){
-        Mat src = Helper.openImg("pic/test_03.png");
+        Mat src = Helper.openImg("pic/test_08.png");
         // 设置有多少个选项
-        int optionCount=4;
+        int optionCount=3;
         // 设置有多少题
         int questionCount = 5;
         //Config config = new Config(optionCount, 3, 0, 14, 9, 0.2, 0.2);
@@ -62,9 +62,11 @@ public class Test {
         if(count==4){
             optionList= Arrays.asList(new Option(number,"A"), new Option(number,"B"), new Option(number,"C"),
                     new Option(number,"D"));
-        }else {
+        }else if(count==5){
             optionList= Arrays.asList(new Option(number,"A"), new Option(number,"B"), new Option(number,"C"),
                     new Option(number,"D"), new Option(number,"E"));
+        }else {
+            optionList= Arrays.asList(new Option(number,"A"), new Option(number,"B"), new Option(number,"C"));
         }
         return optionList;
     }
